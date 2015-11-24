@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 # e/data/learngit
 Test
+=======
+# e/data/learngit
+Test 
+>>>>>>> 93140e1928f47027cf7b052666b81c65dce2ac7c

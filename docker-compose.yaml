@@ -1,0 +1,320 @@
+version: '2'
+services:
+   
+  eureka-server:
+    image: 47.74:5001/abs_wallet_server:eth1.1.0
+    container_name: eureka-server
+    restart: always
+    volumes:
+      - ./data/logs/abs_wallet_server:/logs
+    networks:
+      - sc-net
+    ports:
+      - 8761:8761
+    environment:
+      - SERVER_PORT=8761
+      - EUREKA_INS_HOST=192.168.0.2
+      - EUREKA_SELF_REGISTER=false
+      - EUREKA_HOST_OTHER=http://192.168.0.2:8762/eureka/,http://192.168.0.2:8763/eureka/
+      - TZ=Asia/Shanghai
+
+  eureka-server-1:
+    image: 47.74:5001/abs_wallet_server:eth1.1.0
+    container_name: eureka-server-1
+    restart: always
+    volumes:
+      - ./data/logs/abs_wallet_server_1:/logs
+    networks:
+      - sc-net
+    ports:
+      - 8762:8762
+    environment:
+      - SERVER_PORT=8762
+      - EUREKA_INS_HOST=192.168.0.2
+      - EUREKA_SELF_REGISTER=false
+      - EUREKA_HOST_OTHER=http://192.168.0.2:8761/eureka/,http://192.168.0.2:8763/eureka/
+      - TZ=Asia/Shanghai
+
+  eureka-server-2:
+    image: 47.74:5001/abs_wallet_server:eth1.1.0
+    container_name: eureka-server-2
+    restart: always
+    volumes:
+      - ./data/logs/abs_wallet_server_2:/logs
+    networks:
+      - sc-net
+    ports:
+      - 8763:8763
+    environment:
+      - SERVER_PORT=8763
+      - EUREKA_INS_HOST=192.168.0.2
+      - EUREKA_SELF_REGISTER=false
+      - EUREKA_HOST_OTHER=http://192.168.0.2:8761/eureka/,http://192.168.0.2:8762/eureka/
+      - TZ=Asia/Shanghai
+  
+  abs_wallet:
+    image: 47.74:5001/abs_wallet:eth1.1.0
+    container_name: abs_wallet
+    restart: always
+    volumes:
+      - ./data/logs/abs_wallet:/logs
+    networks:
+      - sc-net
+    ports:
+      - 8090:8090
+    environment:
+      - SERVER_PORT=8090
+      - LOG_LEVEL=debug
+      - MYSQL_HOST=192.168.0.1
+      - MYSQL_PORT=33060
+      - DATABASE_NAME=abs_wallet_eth
+      - MYSQL_USER=root
+      - MYSQL_PASSWD=
+      - DB_MAX_ACTIVE=800
+      - EUREKA_ZONE_HOST=192.168.0.2
+      - EUREKA_ZONE_PORT=8761
+      - WEB_3J_HOST=47.74.188.210
+      - WEB_3J_PORT=6006
+      - EUREKA_INS_HOST=192.168.0.2
+      - CACHE_REDIS_HOST=192.168.0.1
+      - CACHE_REDIS_PORT=6379
+      - CACHE_REDIS_PASSWD=
+      - KAFKA-SERVER=192.168.0.1:9092
+      - REDIS_HOST=192.168.0.1
+      - REDIS_PORT=6379
+      - REDIS_PASSWD=
+      - TZ=Asia/Shanghai
+    depends_on:
+      - eureka-server
+
+
+  abs_wallet_block_manager:
+    image: 47.74:5001/abs_wallet_block_manager:eth1.1.0
+    container_name: abs_wallet_block_manager
+    restart: always
+    volumes:
+      - ./data/logs/abs_wallet_block_manager:/logs
+    networks:
+      - sc-net
+    ports:
+      - 10000:10000
+    environment:
+      - SERVER_PORT=10000
+      - LOG_LEVEL=info
+      - MYSQL_HOST=192.168.0.1
+      - MYSQL_PORT=33060
+      - DATABASE_NAME=abs_wallet_eth
+      - MYSQL_USER=root
+      - MYSQL_PASSWD=
+      - DB_MAX_ACTIVE=800
+      - EUREKA_ZONE_HOST=192.168.0.2
+      - EUREKA_ZONE_PORT=8761
+      - WEB_3J_HOST=47.74.188.210
+      - WEB_3J_PORT=6006
+      - EUREKA_INS_HOST=192.168.0.2
+      - KAFKA-SERVER=192.168.0.1:9092
+      - TASK_ENABLED=true
+      - CRON_CHECK_FAILED=0 0/2 * * * ?
+      - CRON_GET_BLOCKS=*/20 * * * * ?
+      - TZ=Asia/Shanghai
+    depends_on:
+      - eureka-server
+
+  abs_wallet_gateway:
+    image: 47.74:5001/abs_wallet_gateway:eth1.1.0
+    container_name: abs_wallet_gateway
+    restart: always
+    volumes:
+      - ./data/logs/abs_wallet_gateway:/logs
+    networks:
+      - sc-net
+    ports:
+      - 8060:8060
+    environment:
+      - SERVER_PORT=8060
+      - LOG_LEVEL_ROOT=info
+      - LOG_LEVEL=debug
+      - EUREKA_ZONE_HOST=192.168.0.2
+      - EUREKA_ZONE_PORT=8761
+      - EUREKA_INS_HOST=192.168.0.2
+      - CACHE_REDIS_HOST=192.168.0.1
+      - CACHE_REDIS_PORT=6379
+      - CACHE_REDIS_PASSWD=
+      - EUREKA_INTERVAL_SECONDS=5
+      - FILTER_PATH=/wallet/recovery,/wallet/create,/sessionKey/setUpLink,/openapi/pay/callback
+      - FILTER_SKIP_ENABLED=true
+      - TZ=Asia/Shanghai
+    depends_on:
+      - eureka-server
+
+
+  abs_wallet_open:
+    image: 47.74:5001/abs_wallet_open:eth1.1.0
+    container_name: abs_wallet_open
+    restart: always
+    volumes:
+      - ./data/logs/abs_wallet_open:/logs
+    networks:
+      - sc-net
+    ports:
+      - 8092:8092
+    environment:
+      - SERVER_PORT=8092
+      - LOG_LEVEL_ROOT=info
+      - LOG_LEVEL=info
+      - MYSQL_HOST=192.168.0.1
+      - MYSQL_PORT=33060
+      - DATABASE_NAME=abs_wallet_eth
+      - MYSQL_USER=root
+      - MYSQL_PASSWD=
+      - DB_MAX_ACTIVE=800
+      - EUREKA_ZONE_HOST=192.168.0.2
+      - EUREKA_ZONE_PORT=8761
+      - WEB_3J_HOST=47.74.188.210
+      - WEB_3J_PORT=6006
+      - EUREKA_INS_HOST=192.168.0.2
+      - TASK_ENABLED=true
+      - KAFKA-SERVER=192.168.0.1:9092
+      - CRON_DEAL=0 0 22 * * ?
+      - CRON_SYN=0 10 0-22 * * ?
+      - CRON_CLOSE=0 30 0 * * ?
+      - CRON_PEDING=0 30 1 * * ?
+      - CRON_NETWORK=0 0/1 0-23 * * ?
+      - CRON_DEPOSIT=0 10 0-23 * * ?
+      - CRON_CHECK=0 15 0-23 * * ?
+      - CACHE_REDIS_HOST=192.168.0.1
+      - CACHE_REDIS_PORT=6379
+      - CACHE_REDIS_PASSWD=
+      - CACHE_REDIS_DATABASE:15
+      - PAY_CALLBACKKEY=345
+      - PAY_RETURN_STR=ok
+      - CLIENT-URL=http://172.21:8000
+      - HEARTBEAT_CLIENT_VERSION=1.0.2
+      - PAY_HOST=http://175.41:8080/eth/ethPay1.html?
+      - SPRING_MAIL_HOST=smtp.163.com
+      - SPRING_MAIL_USER=zias@163.com
+      - SPRING_MAIL_PW=
+      - SPRING_MAIL_PORT=25
+      - SPRING_MAIL_ADDR=aas@163.com
+      - PAY_CHARGE=true
+      - TZ=Asia/Shanghai
+    depends_on:
+      - eureka-server
+      
+  abs_wallet_lightning:
+    image: 47.74:5001/abs_wallet_lightning:eth1.1.0
+    container_name: abs_wallet_lightning
+    restart: always
+    volumes:
+    - ./data/logs/abs_wallet_lightning:/logs
+    - /root/wallet/files:/root/wallet/files
+    networks:
+    - sc-net
+    ports:
+    - 8188:8188
+    environment:
+    - SERVER_PORT=8188
+    - LOG_LEVEL=info
+    - MYSQL_HOST=192.168.0.1
+    - MYSQL_PORT=33060
+    - DATABASE_NAME=abs_wallet_eth
+    - MYSQL_USER=root
+    - MYSQL_PASSWD=
+    - DB_MAX_ACTIVE=800
+    - EUREKA_ZONE_HOST=192.168.0.2
+    - EUREKA_ZONE_PORT=8761
+    - WEB_3J_HOST=47.74.188.210
+    - WEB_3J_PORT=6006
+    - EUREKA_INS_HOST=192.168.0.2
+    - TASK_ENABLED=true
+    - KAFKA-SERVER=192.168.0.1:9092
+    - CACHE_REDIS_HOST=192.168.0.1
+    - CACHE_REDIS_PORT=6379
+    - CACHE_REDIS_PASSWD=
+    - CACHE_REDIS_DATABASE:15
+    - PAY_CALLBACKKEY=345
+    - PAY_RETURN_STR=ok
+    - HEARTBEAT_REDIS_TIMES=30
+    - HEARTBEAT_CLIENT_VERSION=1.0.2
+    - CRON_EX_PRO=0 30 21 30 * ?
+    - MERCHANT_INSERT=0 32 18 19 7 ?
+    - WEB3J_NET_VERSION=1
+    - EXTRACT_COIN=0 0/1 * * * ?
+    - EXTRACT_COIN_SLEEP=2000
+    - REFUND_COIN=0 0/10 * * * ?
+    - SPRING_MAIL_HOST=smtp.163.com
+    - SPRING_MAIL_USER=zias@163.com
+    - SPRING_MAIL_PW=qwer1234
+    - SPRING_MAIL_PORT=25
+    - SPRING_MAIL_ADDR=zias@163.com
+    - LT_QRCODE_PATH=/root/wallet/files/lt/qrcode
+    - LT_QRCODE_BASE.URL=http://175.41.29.218:8080/lt/qrcode
+    - TZ=Asia/Shanghai
+    depends_on:
+    - eureka-server
+
+  abs_wallet_pay:
+    image: 47.74:5001/abs_wallet_pay:eth1.1.0
+    container_name: abs_wallet_pay
+    restart: always
+    volumes:
+      - ./data/logs/abs_wallet_pay:/logs
+    networks:
+      - sc-net
+    ports:
+      - 8093:8093
+    environment:
+      - SERVER_PORT=8093
+      - LOG_LEVEL=debug
+      - MYSQL_HOST=192.168.0.1
+      - MYSQL_PORT=33060
+      - DATABASE_NAME=abs_wallet_eth
+      - MYSQL_USER=root
+      - MYSQL_PASSWD=
+      - DB_MAX_ACTIVE=800
+      - EUREKA_ZONE_HOST=192.168.0.2
+      - EUREKA_ZONE_PORT=8761
+      - WEB_3J_HOST=47.74.188.210
+      - WEB_3J_PORT=6006
+      - EUREKA_INS_HOST=192.168.0.2
+      - KAFKA-SERVER=192.168.0.1:9092
+      - WEB3J_NET_VERSION=1
+      - TZ=Asia/Shanghai
+    depends_on:
+      - eureka-server
+
+
+  jeecg-boot-module-system:
+    image: 47.74:5001/jeecg-boot-module-system:eth1.1.0
+    container_name: jeecg-boot-module-system
+    restart: always
+    volumes:
+    - ./data/logs/jeecg-boot-module-system:/logs
+    - /root/wallet/files:/root/wallet/files
+    networks:
+    - sc-net
+    ports:
+    - 8032:8032
+    environment:
+    - SERVER_PORT=8032
+    - LOG_LEVEL=debug
+    - MYSQL_HOST=192.168.0.1
+    - MYSQL_PORT=33060
+    - DATABASE_NAME=abs_wallet_eth
+    - MYSQL_USER=root
+    - MYSQL_PASSWD=
+    - CACHE_REDIS_HOST=192.168.0.1
+    - CACHE_REDIS_PORT=6379
+    - CACHE_REDIS_PASSWD=
+    - JEECG_PATH_UPLOAD=/root/jeecg/upFiles
+    - JEECG_PATH_WEBAPP=/root/jeecg/webapp
+    - LT_HELP_BASE_PATH=/root/wallet/files/lt/help
+    - WALLET_NOTICE_HOST=175.41.29.218
+    - TZ=Asia/Shanghai
+
+
+      
+
+networks:
+  sc-net:
+    external: false
